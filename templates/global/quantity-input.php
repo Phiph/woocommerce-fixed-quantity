@@ -26,6 +26,7 @@ if (method_exists($product,'get_id')) {
 $data = WoofixUtility::isFixedQtyPrice($productId);
 ?>
 <div class="quantity_select">
+ 
 
     <?php
     if (!is_cart()) {
@@ -35,16 +36,29 @@ $data = WoofixUtility::isFixedQtyPrice($productId);
 
     <select name="<?php echo esc_attr( $input_name ); ?>"
             title="<?php _ex( 'Qty', 'Product quantity input tooltip', 'woofix' ); ?>"
+ 
             class="qty">
+        <?php if($product->is_type('variable')) : ?>
+        <option  >
+         Please select your attributes...
+        </option>
+
+        <?php else : ?>
+       
         <?php foreach ($data['woofix'] as $item): ?>
 
             <?php
             $woofix_price = $item['woofix_price'];
             $woofix_qty = $item['woofix_qty'];
-            $woofix_disc = $item['woofix_disc'] . '%';
-            $price = wc_price($woofix_price);
-            $total = wc_price($woofix_price * $woofix_qty);
-
+ 
+            if(  $product->is_type( 'simple' ) ){
+                $price = $woofix_price;
+            }elseif($product->is_type( 'variation' ) ){
+                $price =  $product->woofixVariationBasePrice * ((100-$item['woofix_disc']) / 100);
+            }
+            $total = wc_price($price * $woofix_qty);
+            $price = wc_price($price);
+ 
             $woofix_desc = !empty($item['woofix_desc'])? $item['woofix_desc'] : WOOFIXCONF_QTY_DESC;
             $description = str_replace(
                 array('{qty}', '{price}', '{total}', '{discount}', ' '),
@@ -61,6 +75,7 @@ $data = WoofixUtility::isFixedQtyPrice($productId);
             </option>
 
         <?php endforeach; ?>
+        <?php endif; ?>
     </select>
 
     <?php
@@ -70,4 +85,4 @@ $data = WoofixUtility::isFixedQtyPrice($productId);
     ?>
 
 </div>
-
+ 

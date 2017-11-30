@@ -14,6 +14,7 @@ if (!class_exists('WooClientFixedQuantity')) {
         {
             $this->file = $file;
 
+ 
             add_filter('woocommerce_product_add_to_cart_url', array($this, 'add_to_cart_url'));
             add_filter('woocommerce_product_add_to_cart_text', array($this, 'add_to_cart_text'));
             add_filter('woocommerce_loop_add_to_cart_link', array($this, 'loop_add_to_cart_link'));
@@ -34,6 +35,11 @@ if (!class_exists('WooClientFixedQuantity')) {
             add_action('woocommerce_after_calculate_totals', array($this, 'action_before_calculate_totals'), 10, 1);
             add_action('woocommerce_cart_loaded_from_session', array($this, 'action_before_calculate_totals'), 10, 1);
             add_action('template_redirect', array($this, 'action_before_rendering_templates'));
+ 
+
+
+            add_action( 'wp_ajax_get_dropdown', array(&$this, 'get_dropdown_callback' ));
+
 
             if (version_compare(WOOCOMMERCE_VERSION, "2.1.0") >= 0) {
                 add_filter('woocommerce_cart_item_price', array($this, 'filter_item_price'), 20, 3);
@@ -199,6 +205,7 @@ if (!class_exists('WooClientFixedQuantity')) {
             $fixedPriceData = WoofixUtility::isFixedQtyPrice($productId);
             if ($fixedPriceData !== false) {
                 $discount = 0;
+
                 foreach ($fixedPriceData['woofix'] as $disc) {
                     if ($disc['woofix_qty'] == $cart_item['quantity']) {
                         $discount = $disc['woofix_disc'];
@@ -206,9 +213,19 @@ if (!class_exists('WooClientFixedQuantity')) {
                 }
 
                 $itemPrice = $_product->get_price();
+
                 $discprice = wc_price($itemPrice);
-                $oldprice = ($discount < 100)? ($itemPrice * 100) / (100 - $discount) : $_product->get_regular_price('');
+ 
+
+                if(  $_product->is_type( 'simple' ) ){
+                    $oldprice = ($discount < 100)? ($itemPrice * 100) / (100 - $discount) : $_product->get_regular_price('');
+ 
+                }else{
+                    $oldprice =$_product->woofixVariationBasePrice;
+                }
+ 
                 $oldprice = wc_price($oldprice);
+
                 if ($oldprice == $discprice) {
                     $price = "<span class='discount-info'><span class='new-price'>$discprice</span></span>";
 
@@ -235,15 +252,45 @@ if (!class_exists('WooClientFixedQuantity')) {
             if ($fixedPriceData !== false) {
                 foreach ($fixedPriceData['woofix'] as $disc) {
                     if ($disc['woofix_qty'] == $cart_item['quantity']) {
-                        if ($disc['woofix_price'] != $product->get_price()) {
-                            $price = apply_filters('woofix_set_item_price', floatval($disc['woofix_price']), $cart_item, $disc);
-                            $product->set_price($price);
+
+
+
+
+                        if(  $cart_item['data']->is_type( 'simple' ) ){
+                            if ($disc['woofix_price'] != $product->get_price()) {
+                                $itemPrice = apply_filters('woofix_set_item_price', floatval($disc['woofix_price']), $cart_item, $disc);
+                                $product->set_price($itemPrice);
+                            }
+                        }else{
+                            if($product->woofixVariationSet == false){
+
+                                $this-> calculate_variation_pricing($product);
+                                $product->woofixVariationPrice =  $product-> woofixVariationBasePrice * ((100-$disc['woofix_disc']) / 100);
+                                $product->set_price(floatval( $product->woofixVariationPrice ));
+                            }
+
+
+
                         }
+
+
                     }
                 }
             }
 
             return $product;
+        }
+
+        /**
+         * Work out the pricing for a variation
+         * @param WC_Product | WC_Product_Variation | $product
+         */
+        public function calculate_variation_pricing($product){
+            if(!$product->woofixVariationSet){
+                $itemPrice =  $product->get_price();
+                $product->woofixVariationSet = true;
+                $product->woofixVariationBasePrice = $itemPrice;
+            }
         }
 
         /**
@@ -261,13 +308,20 @@ if (!class_exists('WooClientFixedQuantity')) {
                 if ($fixedPriceData !== false) {
                     foreach ($fixedPriceData['woofix'] as $data) {
                         if ($data['woofix_qty'] == $cart_item['quantity']) {
-                            $price = apply_filters('woofix_set_item_price', floatval($data['woofix_price']), $cart_item, $data);
-                            $cart_item['data']->set_price($price);
+ 
+                            if(  $cart_item['data']->is_type( 'simple' ) ){
+                                $cart_item['data']->set_price(floatval($data['woofix_price']));
+                            }elseif($cart_item['data']->is_type( 'variation' ) ){
+                                $variablePrice = $cart_item['data']->get_price();
+                                $cart_item['data']->set_price(floatval($variablePrice));
+                            }
+ 
                         }
                     }
                 }
             }
         }
+
 
         public function validate_quantity($passed, $product_id, $quantity)
         {
@@ -472,14 +526,14 @@ if (!class_exists('WooClientFixedQuantity')) {
                 'discount-info.php',
                 'global/quantity-input.php'
             );
-            
+
             if (!in_array($template_name, $available_templates))
                 return false;
-            
+
             // search template in theme
             $theme_plugin_template = 'woocommerce-fixed-quantity/' . $template_name;
             $template = locate_template($theme_plugin_template, $load);
-            
+
             if (!$template) {
                 // get default template
                 $plugin_template = plugin_dir_path($this->file) . 'templates/' . $template_name;
@@ -490,9 +544,64 @@ if (!class_exists('WooClientFixedQuantity')) {
 
                 $template = $plugin_template;
             }
-            
+
             return $template;
         }
-    }
-}
 
+
+
+        /**
+         * Reutrn Variable product Dropdown options
+         * @return json
+         */
+        function get_dropdown_callback(){
+
+            $return_arr = array();
+            $row_array = array();
+            $count = 0;
+
+            $productId = intval( $_POST['variation'] );
+
+            if($productId !=null){
+
+                $product = WC()->product_factory->get_product($productId);
+
+                $data = WoofixUtility::isFixedQtyPrice($product->id);
+
+                foreach ($data['woofix'] as $item)
+                {
+                    $count++;
+                    $woofix_price = $item['woofix_price'];
+                    $woofix_qty = $item['woofix_qty'];
+                    if(  $product->is_type( 'simple' ) ){
+                        $price = $woofix_price;
+                    }elseif($product->is_type( 'variation' ) ){
+                        $this->calculate_variation_pricing($product);
+                        $price =   $product->woofixVariationBasePrice * ((100-$item['woofix_disc']) / 100);
+                    }
+                    $total = wc_price($price * $woofix_qty);
+                    $price = wp_strip_all_tags(wc_price($price));
+                    $woofix_desc = !empty($item['woofix_desc'])? $item['woofix_desc'] : WOOFIXCONF_QTY_DESC;
+                    $description = str_replace( array('{qty}', '{price}', '{total}', ' '), array($woofix_qty,  $price, $total, '&nbsp;'),  $woofix_desc );
+
+
+                    $row_array['id'] =  $count;
+                    $row_array['text'] =  wp_strip_all_tags($description)  ;
+                    $row_array['qty'] =  $woofix_qty;
+                    $row_array['price'] =  $price   ;
+
+
+                    array_push($return_arr,$row_array);
+                }
+
+                wp_send_json( $return_arr ) ;
+            }
+            die(); // this is required to return a proper result
+        }
+
+    }
+ 
+}
+ 
+
+ 
