@@ -40,15 +40,23 @@ if (!class_exists('WooAdminFixedQuantity')) {
         }
 
         /**
-         * @param $product
+         * @param WC_Product | array $product
          * @return int
          */
         public static function getActualId($product)
         {
+ 
             if ($product instanceof WC_Product_Variation) {
                 return $product->parent->id;
             }
+ 
             if (is_object($product)) {
+                if (method_exists($product,'get_id'))
+                    return $product->get_id();
+
+                /**
+                 * @deprecated keep it for backward compatible
+                 */
                 return $product->id;
             }
            

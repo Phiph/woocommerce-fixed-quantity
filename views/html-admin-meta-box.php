@@ -24,12 +24,14 @@ foreach ($woofix_available_role as $role_key) {
 <div id="woofix_product_data" class="panel woocommerce_options_panel wc-metaboxes-wrapper">
     <div class="options_group">
         <input type="hidden" name="_woofix" value="<?php echo !empty($custom_fields["_woofix"][0])? $custom_fields["_woofix"][0] : ''; ?>" />
+ 
         <p>
             <em>
                 <strong><?php _e('Note:', 'woofix'); ?></strong>
                 <?php _e('To use custom description, please use this template:', 'woofix'); ?> <quote>{qty} items @{price} {total}</quote>
             </em>
         </p>
+ 
         <div id="woofix_product_data_table">
             <?php foreach ($woofix_roles as $role): ?>
             <div class="postbox woofix_price_table_container <?php echo ($role['key'] == $woofix_default_role)? "" : "closed"; ?>"

@@ -11,14 +11,28 @@ if (!class_exists('WooAdminFixedQuantity')) {
         {
             $this->file = $file;
 
-            add_filter('woocommerce_product_data_tabs', array(&$this, 'add_product_data_tab'));
-            add_action('woocommerce_product_data_panels', array(&$this, 'add_product_data_panel'));
-            add_action('woocommerce_process_product_meta', array(&$this, 'save_custom_fields'), 10);
-            add_filter('woocommerce_get_sections_products', array(&$this, 'global_setting_section'));
-            add_filter('woocommerce_get_settings_products', array(&$this, 'global_setting_configuration'), 10, 2);
+            add_filter('plugin_action_links_' . plugin_basename($this->file), array($this, 'add_action_links'));
+            add_filter('woocommerce_product_data_tabs', array($this, 'add_product_data_tab'));
+            add_action('woocommerce_product_data_panels', array($this, 'add_product_data_panel'));
+            add_action('woocommerce_process_product_meta', array($this, 'save_custom_fields'), 10);
+            add_filter('woocommerce_get_sections_products', array($this, 'global_setting_section'));
+            add_filter('woocommerce_get_settings_products', array($this, 'global_setting_configuration'), 10, 2);
 
-            add_filter('parse_query', array(&$this, 'filter_query'));
-            add_filter('woocommerce_product_filters', array(&$this, 'filter_products'));
+            add_filter('parse_query', array($this, 'filter_query'));
+            add_filter('woocommerce_product_filters', array($this, 'filter_products'));
+        }
+
+        /**
+         * @param array $links
+         * @return array
+         *
+         */
+        public function add_action_links($links)
+        {
+            $settingURL = admin_url('admin.php?page=wc-settings&tab=products&section=woofixconf');
+            array_unshift($links, '<a href="' . $settingURL . '">Settings</a>');
+
+            return $links;
         }
 
         public function global_setting_configuration($settings, $current_section)
@@ -43,11 +57,11 @@ if (!class_exists('WooAdminFixedQuantity')) {
                 'type'     => 'text',
                 'class'    => 'input-text regular-input ',
                 'required' => true,
-                'desc'     => __('Available variable are: <code>{qty}</code>, <code>{price}</code>, and <code>{total}</code>', 'woofix'),
+                'desc'     => __('Available variable are: <code>{qty}</code>, <code>{discount}</code>, <code>{price}</code>, and <code>{total}</code>', 'woofix'),
             );
 
             $woofix_config[] = array(
-                'name'     => __('Show discount info', 'woofix'),
+                'name'     => __('Show Discount Info', 'woofix'),
                 'id'       => WOOFIXOPT_SHOW_DISC,
                 'default'  => WOOFIXCONF_SHOW_DISC,
                 'type'     => 'checkbox',
@@ -55,7 +69,15 @@ if (!class_exists('WooAdminFixedQuantity')) {
             );
 
             $woofix_config[] = array(
-                'name'     => __('Show stock availability', 'woofix'),
+                'name'     => __('Add to Cart as New Item', 'woofix'),
+                'id'       => WOOFIXOPT_ADD_TO_CART_AS_NEW,
+                'default'  => WOOFIXCONF_ADD_TO_CART_AS_NEW,
+                'type'     => 'checkbox',
+                'desc'     => __('When adding product to cart twice or more, add it as new instead of updating Qty.', 'woofix'),
+            );
+
+            $woofix_config[] = array(
+                'name'     => __('Show Stock Availability', 'woofix'),
                 'id'       => WOOFIXOPT_SHOW_STOCK,
                 'default'  => WOOFIXCONF_SHOW_STOCK,
                 'type'     => 'checkbox',
@@ -63,11 +85,11 @@ if (!class_exists('WooAdminFixedQuantity')) {
             );
 
             $woofix_config[] = array(
-                'name'     => __('Check stock', 'woofix'),
+                'name'     => __('Check Stock', 'woofix'),
                 'id'       => WOOFIXOPT_CHECK_STOCK,
                 'default'  => WOOFIXCONF_CHECK_STOCK,
                 'type'     => 'checkbox',
-                'desc'     => __('Check stock availability before purchase/check out.', 'woofix'),
+                'desc'     => __('Check stock availability before purchase/check out. <b>Not implemented yet.</b>', 'woofix'),
             );
 
             $available_roles = array();

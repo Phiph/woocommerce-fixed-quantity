@@ -1,11 +1,11 @@
 === WooCommerce Fixed Quantity ===
 Contributors: habibillah
-Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=JXW9V2RRZNDXW
+Donate link: https://www.paypal.me/habibillah
 Tags: woocomerce, fixed quantity, ecommerce, fixed price
 Requires at least: 3.0.1
-Tested up to: 4.6
-Version: 1.1.3
-Stable tag: 1.1.3
+Tested up to: 4.9
+Version: 1.2.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,10 +20,13 @@ purchase with unlisted quantity.
 This also will avoid **Sale Price** form in **General** tab, but will add the discount/specific price directly when
 define fixed quantity list.
 
-This project supported by:
+= Demo Website =
 
-1. [Kalicode Sudio](http://www.kalicode.com)
-2. [PhpStorm Open Source License](https://www.jetbrains.com/buy/opensource/?product=phpstorm)
+Sample product can be accessed at [Woofix demo website](https://woofix.kalicode.com/)
+
+1. [Happy Ninja](https://woofix.kalicode.com/shop/happy-ninja/)
+2. [Woo Ninja](https://woofix.kalicode.com/shop/woo-ninja/)
+3. [More...](https://woofix.kalicode.com/)
 
 = How to use =
 
@@ -40,10 +43,12 @@ Right now this plugins has limitations that not check **Stock Qty**. So when sto
 1. woofix_quantity_is_not_valid
 2. woofix_product_add_to_cart_text
 3. woofix_sort_qty_data_to_show
+4. woofix_set_item_price
 
 = Available Actions Hook =
 
-No action available
+1. woofix_before_quantity_input
+2. woofix_after_quantity_input
 
 == Installation ==
 
@@ -118,11 +123,31 @@ Uncheck **Show discount info**. Don't forget to hit **Save Changes** button.
 * Fixing conflict with underscore
 
 = 1.1.3 =
-* For to use woofix price when other plugin by pass add to cart
+* For to use woofix price when other plugin by-pass add to cart
 * Add translation files
 * fix template load error
+
+= 1.1.4 =
+* Add support for multisite
+* Tested with wordpress 4.7
+
+= 1.1.5 =
+* Add **{discount}** code templete
+
+= 1.1.6 =
+* Add option to force add to cart as new item instead of updating existing product quantity
+
+= 1.1.7 =
+* Fix regarding woocommerce major release 3.0
+
+= 1.1.8 =
+* tested to WP 4.8
+
+= 1.1.9 =
+* Fix devided by zero discount
 
 == Upgrade Notice ==
 
 = 1.0.1 =
 This is the initial public release. Fill free to ask, report bugs, etc.
+

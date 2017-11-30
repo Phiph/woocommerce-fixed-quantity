@@ -15,11 +15,28 @@ if (empty($product))
 
 $selected_quantity = !empty($selected_quantity)? $selected_quantity : '';
 
-$data = WoofixUtility::isFixedQtyPrice($product->id);
+if (method_exists($product,'get_id')) {
+    $productId = $product->get_id();
+} else {
+    /**
+     * @deprecated keep it for backward compatible
+     */
+    $productId = $product->id;
+}
+$data = WoofixUtility::isFixedQtyPrice($productId);
 ?>
 <div class="quantity_select">
-    <select  name="<?php echo esc_attr( $input_name ); ?>"
-            title="<?php _ex( 'Qty', 'Product quantity input tooltip', 'woocommerce' ); ?>"
+ 
+
+    <?php
+    if (!is_cart()) {
+        do_action('woofix_before_quantity_input');
+    }
+    ?>
+
+    <select name="<?php echo esc_attr( $input_name ); ?>"
+            title="<?php _ex( 'Qty', 'Product quantity input tooltip', 'woofix' ); ?>"
+ 
             class="qty">
         <?php if($product->is_type('variable')) : ?>
         <option  >
@@ -33,6 +50,7 @@ $data = WoofixUtility::isFixedQtyPrice($product->id);
             <?php
             $woofix_price = $item['woofix_price'];
             $woofix_qty = $item['woofix_qty'];
+ 
             if(  $product->is_type( 'simple' ) ){
                 $price = $woofix_price;
             }elseif($product->is_type( 'variation' ) ){
@@ -40,10 +58,11 @@ $data = WoofixUtility::isFixedQtyPrice($product->id);
             }
             $total = wc_price($price * $woofix_qty);
             $price = wc_price($price);
+ 
             $woofix_desc = !empty($item['woofix_desc'])? $item['woofix_desc'] : WOOFIXCONF_QTY_DESC;
             $description = str_replace(
-                array('{qty}', '{price}', '{total}', ' '),
-                array($woofix_qty,  $price, $total, '&nbsp;'),
+                array('{qty}', '{price}', '{total}', '{discount}', ' '),
+                array($woofix_qty,  $price, $total, $woofix_disc, '&nbsp;'),
                 $woofix_desc
             );
             ?>
@@ -58,6 +77,12 @@ $data = WoofixUtility::isFixedQtyPrice($product->id);
         <?php endforeach; ?>
         <?php endif; ?>
     </select>
-</div>
 
+    <?php
+    if (!is_cart()) {
+        do_action('woofix_after_quantity_input');
+    }
+    ?>
+
+</div>
  
