@@ -23,7 +23,9 @@ if (!class_exists('WooClientFixedQuantity')) {
             add_filter('woocommerce_cart_item_subtotal', array($this, 'filter_subtotal_price'), 20, 2);
             add_filter('woocommerce_checkout_item_subtotal', array($this, 'filter_subtotal_price'), 20, 2);
             add_filter('woocommerce_order_formatted_line_subtotal', array($this, 'order_formatted_line_subtotal'), 10, 2);
-            add_filter('woocommerce_add_to_cart_validation', array($this, 'validate_quantity'), 10, 3);
+
+            add_filter('woocommerce_add_to_cart_validation', array($this, 'validate_quantity'), 10, 5);
+
             add_filter('woocommerce_update_cart_validation', array($this, 'validate_quantity_update'), 10, 4);
             add_filter('woocommerce_cart_item_quantity', array($this, 'filter_woocommerce_cart_item_quantity'), 10, 2);
             add_filter('woocommerce_get_availability', array($this, 'get_availability'), 1, 2);
@@ -39,7 +41,7 @@ if (!class_exists('WooClientFixedQuantity')) {
 
 
             add_action( 'wp_ajax_get_dropdown', array(&$this, 'get_dropdown_callback' ));
-
+            add_action( 'wp_ajax_nopriv_get_dropdown', array(&$this, 'get_dropdown_callback' ));
 
             if (version_compare(WOOCOMMERCE_VERSION, "2.1.0") >= 0) {
                 add_filter('woocommerce_cart_item_price', array($this, 'filter_item_price'), 20, 3);
@@ -322,8 +324,7 @@ if (!class_exists('WooClientFixedQuantity')) {
             }
         }
 
-
-        public function validate_quantity($passed, $product_id, $quantity)
+        public function validate_quantity($passed, $product_id, $quantity,  $variation_id = null, $variations = null )
         {
             // TODO complete check stock. Also check when checkout
             //$check_stock = get_option(WOOFIXOPT_CHECK_STOCK, WOOFIXCONF_CHECK_STOCK);
@@ -331,15 +332,24 @@ if (!class_exists('WooClientFixedQuantity')) {
             //
             //}
 
+
+
             $fixedPriceData = WoofixUtility::isFixedQtyPrice($product_id);
             if ($fixedPriceData !== false) {
                 $qtyInCart = 0;
-
                 foreach (WC()->cart->get_cart() as $cart_item_key => $cart_item) {
                     $productId = WoofixUtility::getActualId($cart_item['data']);
-                    if ($product_id == $productId) {
-                        $qtyInCart = !empty($cart_item['quantity']) ? $cart_item['quantity'] : 0;
-                    }
+
+                        $variationId = $cart_item['variation_id'];
+                        if ($product_id == $productId ) {
+                            if($variationId >0){
+                                if ($variationId == $variation_id){
+                                    $qtyInCart = !empty($cart_item['quantity']) ? $cart_item['quantity'] : 0;
+                                }
+                            }else{
+                                $qtyInCart = !empty($cart_item['quantity']) ? $cart_item['quantity'] : 0;
+                            }
+                        }
                 }
 
                 $updateQty = get_option(WOOFIXOPT_ADD_TO_CART_AS_NEW, WOOFIXCONF_ADD_TO_CART_AS_NEW);
@@ -357,8 +367,14 @@ if (!class_exists('WooClientFixedQuantity')) {
                 }
 
                 if (!$passed) {
-                    $product = wc_get_product($product_id);
-                    $product_title = $product->get_title();
+                    if($variation_id != null){
+                        $product = wc_get_product($variation_id);
+                        $product_title = $product->get_name();
+                    }else{
+                        $product = wc_get_product($product_id);
+                        $product_title = $product->get_title();
+                    }
+
 
                     $additionalMessage = (empty($qtyInCart) || $qtyInCart < 1) ? '' : sprintf(__('You have added %s qty in your cart.', 'woofix'), $qtyInCart);
                     $message = sprintf(__("Product %s can be ordered using this listed quantity : %s. %s", "woofix"), $product_title, implode(', ', $quantityList), $additionalMessage);
@@ -369,6 +385,10 @@ if (!class_exists('WooClientFixedQuantity')) {
 
             return $passed;
         }
+
+
+
+
 
         public function validate_quantity_update($passed, $cart_item_key, $cart_item, $quantity)
         {
