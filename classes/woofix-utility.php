@@ -98,8 +98,11 @@ if (!class_exists('WooAdminFixedQuantity')) {
                         if (empty($qty_data['woofix_qty']))
                             continue;
 
-                        if (empty($qty_data['woofix_disc']) && empty($qty_data['woofix_price']))
-                            continue;
+ 
+                            if (isset ($qty_data['woofix_disc']) ==false && empty($qty_data['woofix_price']))
+                                continue;
+
+
 
                         $returnValue[] = $qty_data;
                     }

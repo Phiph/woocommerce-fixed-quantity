@@ -573,7 +573,7 @@ if (!class_exists('WooClientFixedQuantity')) {
         /**
          * Reutrn Variable product Dropdown options
          * @return json
-         */
+         **/
         function get_dropdown_callback(){
 
             $return_arr = array();
